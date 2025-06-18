@@ -5,7 +5,7 @@ import numpy as np
 
 # --- 1. 오디오 파일 로드 ---
 # 파일 경로를 지정합니다.
-file_path = 'speech_ai_liam.mp3' 
+file_path = '/work/speechfeedback-service/python/mp3/speech_ai_liam.mp3' 
 
 try:
     # y: 오디오 신호 데이터 (waveform), sr: 샘플링 레이트 (Sampling Rate)
