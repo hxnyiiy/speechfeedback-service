@@ -1,4 +1,5 @@
-// nodejs/node_server.js (S3 도입 전 버전)
+// nodejs/node_server.js
+
 const express = require('express');
 const app = express();
 const multer = require('multer');
@@ -123,6 +124,41 @@ app.get('/get_standard_waveform', async (req, res) => {
     }
 });
 
+// --- **새로운 엔드포인트 4: 업로드된 파일과 표준 파일을 받아 겹쳐진 파형 이미지 생성** ---
+app.post('/get_overlapped_waveform', upload.single('audioFile'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: '오디오 파일이 업로드되지 않았습니다.' });
+    }
+
+    try {
+        const formData = new FormData();
+        // 'uploaded_audio_file'은 FastAPI 엔드포인트에서 alias로 지정한 이름과 일치해야 합니다.
+        formData.append('uploaded_audio_file', req.file.buffer, { 
+            filename: req.file.originalname,
+            contentType: req.file.mimetype
+        });
+
+        // FastAPI 서버의 겹쳐진 파형 생성 엔드포인트 호출
+        const response = await axios.post(fastapiUrl + '/generate_overlapped_waveform', formData, {
+            headers: formData.getHeaders(),
+            responseType: 'stream', // 이미지 데이터를 스트림으로 받음
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        });
+
+        res.setHeader('Content-Type', response.headers['content-type']);
+        response.data.pipe(res);
+
+    } catch (error) {
+        console.error('FastAPI 호출 중 오류 발생 (겹쳐진 파형):', error.message);
+        if (error.response) {
+            console.error('FastAPI 응답 오류 데이터 (겹쳐진 파형):', error.response.data);
+            res.status(error.response.status).send(error.response.data);
+        } else {
+            res.status(500).json({ error: '겹쳐진 파형 생성 중 오류 발생', detail: error.message });
+        }
+    }
+});
 
 // Express 서버 리스닝 시작
 app.listen(port, () => {

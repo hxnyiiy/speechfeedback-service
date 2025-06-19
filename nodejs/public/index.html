@@ -32,6 +32,22 @@
             display: block;
             margin: 0 auto;
         }
+        
+        /* 새로 추가된 겹쳐진 파형 컨테이너 스타일 */
+        #overlapped-waveform-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #007bff; /* 다른 색상으로 강조 */
+            border-radius: 8px;
+            background-color: #e6f3ff; /* 연한 파랑 배경 */
+            text-align: center;
+        }
+        #overlapped-waveform-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -39,10 +55,10 @@
         <h1>오디오 유사도 분석 (AI 파일과 비교)</h1>
         <p>비교할 오디오 파일을 업로드해주세요. 업로드된 파일은 미리 지정된 AI 음성 파일과 비교됩니다.</p>
         <input type="file" id="audioFileInput" accept="audio/*">
-        <button onclick="uploadAndAnalyze()">유사도 분석 시작</button>
-        <button onclick="generateWaveform()">업로드된 파일 파형 보기</button> 
         
-        <div id="loading" class="loading" style="display:none;">
+        <button onclick="generateWaveform()">업로드된 파일 파형 보기</button> 
+        <button onclick="generateOverlappedWaveform()">겹쳐진 파형 보기</button> 
+        <button onclick="uploadAndAnalyze()">유사도 분석 시작</button> <div id="loading" class="loading" style="display:none;">
             분석 중입니다... 잠시만 기다려주세요.
         </div>
 
@@ -58,6 +74,11 @@
             <h2>업로드된 오디오 파형</h2>
             <img id="waveform-image" src="" alt="업로드된 오디오 파형">
         </div>
+
+        <div id="overlapped-waveform-container" style="display:none;">
+            <h2>겹쳐진 오디오 파형</h2>
+            <img id="overlapped-waveform-image" src="" alt="겹쳐진 오디오 파형">
+        </div>
         
         <div id="result" style="display:none;">
             <p><strong>분석 결과:</strong></p>
@@ -68,8 +89,7 @@
     </div>
 
     <script>
-        // loadStandardWaveform 함수는 이제 window.onload에서 호출되지 않습니다.
-        // generateWaveform 함수 내부에서 필요할 때 호출됩니다.
+        // 이 함수는 이제 generateWaveform 내부에서만 호출되거나, 필요에 따라 직접 호출될 수 있습니다.
         async function loadStandardWaveform() {
             const standardWaveformContainer = document.getElementById('standard-waveform-container');
             const standardWaveformImage = document.getElementById('standard-waveform-image');
@@ -127,6 +147,7 @@
             // 유사도 분석 시에는 파형 컨테이너들을 모두 숨깁니다.
             document.getElementById('waveform-container').style.display = 'none';
             document.getElementById('standard-waveform-container').style.display = 'none'; 
+            document.getElementById('overlapped-waveform-container').style.display = 'none'; // 겹쳐진 파형 컨테이너도 숨김
 
             const formData = new FormData();
             formData.append('audioFile', file);
@@ -165,6 +186,7 @@
             const waveformImage = document.getElementById('waveform-image');
             const loadingDiv = document.getElementById('loading');
             document.getElementById('result').style.display = 'none';
+            document.getElementById('overlapped-waveform-container').style.display = 'none'; // 겹쳐진 파형 숨김
 
             const file = audioFileInput.files?.[0];
             if (!file) {
@@ -176,13 +198,12 @@
             waveformContainer.style.display = 'none';
             waveformImage.src = '';
             
-            // --- 변경된 부분: 표준 파형 먼저 로드 ---
+            // 표준 파형도 함께 보여주려면 여기서 로드합니다.
             const standardWaveformLoaded = await loadStandardWaveform();
             if (!standardWaveformLoaded) {
                 loadingDiv.style.display = 'none';
                 return; // 표준 파형 로드 실패 시 중단
             }
-            // --- 변경된 부분 끝 ---
 
             const formData = new FormData();
             formData.append('audioFile', file);
@@ -212,6 +233,58 @@
             }
         }
 
+        // --- 새로 추가된 함수: 겹쳐진 파형 보기 ---
+        async function generateOverlappedWaveform() {
+            const audioFileInput = document.getElementById('audioFileInput');
+            const overlappedWaveformContainer = document.getElementById('overlapped-waveform-container');
+            const overlappedWaveformImage = document.getElementById('overlapped-waveform-image');
+            const loadingDiv = document.getElementById('loading');
+            
+            // 다른 결과 및 파형 컨테이너 숨기기
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('waveform-container').style.display = 'none';
+            document.getElementById('standard-waveform-container').style.display = 'none';
+
+            const file = audioFileInput.files?.[0];
+            if (!file) {
+                alert('오디오 파일을 선택해주세요.');
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            overlappedWaveformContainer.style.display = 'none';
+            overlappedWaveformImage.src = '';
+
+            const formData = new FormData();
+            formData.append('audioFile', file); // Node.js 엔드포인트는 'audioFile'로 받습니다.
+            // Node.js는 이를 다시 'uploaded_audio_file'로 FastAPI에 전달합니다.
+
+            try {
+                const response = await fetch('/get_overlapped_waveform', { // Node.js의 새로운 엔드포인트 호출
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || errorData.error || '겹쳐진 파형 생성 실패');
+                }
+
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                overlappedWaveformImage.src = imageUrl;
+                overlappedWaveformContainer.style.display = 'block'; // 겹쳐진 파형 컨테이너 표시
+
+            } catch (error) {
+                console.error('Error generating overlapped waveform:', error);
+                alert(`겹쳐진 파형을 불러오는 데 실패했습니다: ${error.message}`);
+                overlappedWaveformContainer.style.display = 'none';
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        // 페이지 로드 시 표준 파형을 바로 불러오지 않고, 버튼 클릭 시점에 필요에 따라 로드하도록 변경
         // window.onload = loadStandardWaveform; // 이 줄은 제거되었습니다.
     </script>
 </body>

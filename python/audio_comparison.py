@@ -1,4 +1,5 @@
-# python/audio_comparison.py (S3 도입 전 버전)
+# python/audio_comparison.py
+
 import librosa
 import librosa.display
 import numpy as np
@@ -10,12 +11,13 @@ import io
 import os
 import uvicorn
 import matplotlib.pyplot as plt
-# requests 모듈은 S3 URL 다운로드에 필요했으므로, 이 버전에서는 필요 없습니다.
-# import requests 
 
 app = FastAPI()
 
 # --- 0. 표준 오디오 파일 로드 (미리 로드하여 효율성 높임) ---
+# 이 경로는 Docker 컨테이너 내의 경로를 고려해야 합니다.
+# Dockerfile에서 /work/speechfeedback-service/python/mp3/ 경로로 파일을 복사했다면 이대로 유지합니다.
+# 그렇지 않다면 Dockerfile에 맞게 경로를 조정해야 합니다.
 STANDARD_AUDIO_PATH = "/work/speechfeedback-service/python/mp3/speech_ai_liam.mp3"
 STANDARD_N_MFCC = 13
 
@@ -38,10 +40,6 @@ class SimilarityResult(BaseModel):
     similarity_score: float
     message: str
     detail: str = None
-
-# S3 관련 모델은 이 버전에서 필요 없습니다.
-# class S3FileRequest(BaseModel):
-#     file_url: str
 
 # --- 기존 엔드포인트 1: 파일 직접 받아서 유사도 분석 ---
 @app.post("/analyze_audio_similarity", response_model=SimilarityResult)
@@ -123,7 +121,7 @@ async def generate_waveform(file: UploadFile = File(...)):
             raise HTTPException(status_code=500, detail=f"파형 생성 중 오류 발생: {str(e)}")
 
 
-# --- 새로운 엔드포인트 3: 표준 MP3 파일의 파형 생성 ---
+# --- 기존 엔드포인트 3: 표준 MP3 파일의 파형 가져오기 ---
 @app.get("/generate_standard_waveform")
 async def generate_standard_waveform():
     """
@@ -150,5 +148,69 @@ async def generate_standard_waveform():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"표준 파형 생성 중 오류 발생: {str(e)}")
 
+
+# --- **새로운 엔드포인트 4: 두 오디오 파일 파형을 투명하게 겹쳐서 생성** ---
+@app.post("/generate_overlapped_waveform")
+async def generate_overlapped_waveform(
+    uploaded_file: UploadFile = File(..., alias="uploaded_audio_file")
+):
+    """
+    업로드된 오디오 파일과 미리 로드된 표준 오디오 파일의 파형을
+    투명하게 겹쳐서 하나의 이미지로 생성하여 반환합니다.
+    """
+    try:
+        # 1. 업로드된 오디오 파일 로드
+        uploaded_audio_content = await uploaded_file.read()
+        uploaded_audio_io = io.BytesIO(uploaded_audio_content)
+        y_uploaded, sr_uploaded = librosa.load(uploaded_audio_io, sr=None)
+        
+        # 2. 표준 오디오 파일 데이터 사용 (전역 변수 활용)
+        if y_standard_audio_data is None or sr_standard_audio_data is None:
+            raise HTTPException(status_code=500, detail="표준 오디오 파일이 서버에 로드되지 않았습니다.")
+        
+        y_standard = y_standard_audio_data
+        sr_standard = sr_standard_audio_data
+
+        # 3. 시간 축 생성 (두 오디오 중 더 긴 길이에 맞춤)
+        time_standard = np.linspace(0, len(y_standard) / sr_standard, num=len(y_standard))
+        time_uploaded = np.linspace(0, len(y_uploaded) / sr_uploaded, num=len(y_uploaded))
+
+        # 그래프의 x축 길이를 두 오디오 중 더 긴 오디오에 맞춥니다.
+        max_duration = max(len(y_standard) / sr_standard, len(y_uploaded) / sr_uploaded)
+
+        # 4. 파형 플로팅 (투명도 조절)
+        fig, ax = plt.subplots(figsize=(14, 6)) # 전체 그래프 크기 설정
+
+        # 첫 번째 파형 (표준 오디오) 플로팅 (투명도 0.6)
+        ax.plot(time_standard, y_standard, label='Standard Audio (' + os.path.basename(STANDARD_AUDIO_PATH) + ')', alpha=0.6, color='blue', linewidth=1)
+
+        # 두 번째 파형 (업로드된 오디오) 플로팅 (투명도 0.6)
+        ax.plot(time_uploaded, y_uploaded, label='Uploaded Audio (' + uploaded_file.filename + ')', alpha=0.6, color='red', linewidth=1)
+
+        # 5. 그래프 꾸미기
+        ax.set_title('Overlapped Waveform Comparison')
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Amplitude')
+        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.legend()
+        ax.set_ylim(-1.0, 1.0) # Y축 범위 고정
+        ax.set_xlim(0, max_duration) # X축 범위 조정
+        plt.tight_layout()
+
+        # 6. 이미지를 메모리에 저장하고 반환
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        plt.close(fig) # 메모리 누수 방지를 위해 figure 닫기
+
+        return StreamingResponse(buf, media_type="image/png")
+
+    except Exception as e:
+        if "ffmpeg" in str(e).lower() or "codec" in str(e).lower():
+            raise HTTPException(status_code=500, detail=f"오디오 처리 중 오류 발생: {str(e)}. MP3 파일을 로드하려면 ffmpeg이 설치 및 설정되어 있어야 합니다.")
+        else:
+            raise HTTPException(status_code=500, detail=f"겹쳐진 파형 생성 중 오류 발생: {str(e)}")
+
+# FastAPI 서버 실행
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3000, reload=True)
