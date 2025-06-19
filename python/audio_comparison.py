@@ -1,9 +1,9 @@
-# python/audio_comparison.py
-
 import librosa
 import librosa.display
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from fastdtw import fastdtw # fastdtw 라이브러리 추가
+from scipy.spatial.distance import euclidean # DTW에 사용될 거리 함수
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -24,12 +24,12 @@ STANDARD_N_MFCC = 13
 # 표준 오디오 데이터를 전역 변수로 저장
 y_standard_audio_data = None
 sr_standard_audio_data = None
-mfccs_standard_mean = None
+mfccs_standard_full = None # 전체 MFCC 시퀀스를 저장하도록 변경
 
 try:
     y_standard_audio_data, sr_standard_audio_data = librosa.load(STANDARD_AUDIO_PATH, sr=None)
-    mfccs_standard = librosa.feature.mfcc(y=y_standard_audio_data, sr=sr_standard_audio_data, n_mfcc=STANDARD_N_MFCC)
-    mfccs_standard_mean = np.mean(mfccs_standard, axis=1)
+    # 전체 MFCC 시퀀스를 계산하여 저장합니다.
+    mfccs_standard_full = librosa.feature.mfcc(y=y_standard_audio_data, sr=sr_standard_audio_data, n_mfcc=STANDARD_N_MFCC)
     print(f"표준 오디오 파일 '{STANDARD_AUDIO_PATH}' 로드 및 MFCC 계산 완료.")
 except Exception as e:
     print(f"FATAL ERROR: 표준 오디오 파일 로드 또는 MFCC 계산 실패: {e}")
@@ -46,19 +46,33 @@ class SimilarityResult(BaseModel):
 async def analyze_audio_similarity(file: UploadFile = File(...)):
     """
     업로드된 오디오 파일과 표준 AI 오디오 파일 간의 MFCC 기반 유사도를 분석합니다.
-    (S3를 거치지 않고 직접 파일을 받습니다)
+    DTW (Dynamic Time Warping)를 사용하여 더욱 상세한 유사도 비교를 수행합니다.
     """
     try:
         audio_content = await file.read() # 업로드된 파일 내용을 읽음
         audio_io = io.BytesIO(audio_content) # 메모리 버퍼로 변환
 
         y_uploaded, sr_uploaded = librosa.load(audio_io, sr=None)
-        mfccs_uploaded = librosa.feature.mfcc(y=y_uploaded, sr=sr_uploaded, n_mfcc=STANDARD_N_MFCC)
-        mfccs_mean_uploaded = np.mean(mfccs_uploaded, axis=1)
-        similarity_score = cosine_similarity(
-            mfccs_standard_mean.reshape(1, -1),
-            mfccs_mean_uploaded.reshape(1, -1)
-        )[0][0]
+        
+        # 업로드된 오디오의 전체 MFCC 시퀀스를 계산합니다.
+        mfccs_uploaded_full = librosa.feature.mfcc(y=y_uploaded, sr=sr_uploaded, n_mfcc=STANDARD_N_MFCC)
+        
+        # DTW를 사용하여 두 MFCC 시퀀스 간의 거리 계산
+        # fastdtw는 (거리, 경로) 튜플을 반환합니다.
+        distance, path = fastdtw(mfccs_standard_full.T, mfccs_uploaded_full.T, dist=euclidean)
+
+        # DTW 거리를 유사도 점수로 변환 (0과 1 사이로 정규화)
+        # 거리가 0에 가까울수록 유사도가 높음
+        # 일반적으로 1 / (1 + distance) 와 같은 형태나,
+        # max_distance로 정규화하는 방법을 사용합니다.
+        # 여기서는 경로의 길이를 활용하여 정규화합니다.
+        normalized_distance = distance / len(path) # 경로 길이로 나누어 정규화
+        
+        # 유사도 점수 계산 (0: 유사성 없음, 1: 완벽하게 유사)
+        # 값이 너무 커지는 것을 방지하고 유사도로 변환하기 위한 경험적인 방법
+        similarity_score = np.exp(-normalized_distance / 100) # 지수 함수를 사용하여 유사도를 0-1 사이로 스케일링
+
+        # 유사도 점수에 따른 메시지
         if similarity_score > 0.9:
             message = "두 오디오는 매우 유사합니다."
         elif similarity_score > 0.7:
@@ -68,13 +82,12 @@ async def analyze_audio_similarity(file: UploadFile = File(...)):
         else:
             message = "두 오디오는 유사성이 낮습니다."
         
-        # 파일명은 직접 받은 파일에서 가져옴
         uploaded_filename = file.filename 
         
         return SimilarityResult(
             similarity_score=float(similarity_score),
             message=message,
-            detail=f"업로드된 파일: {uploaded_filename}, 표준 파일: {os.path.basename(STANDARD_AUDIO_PATH)}"
+            detail=f"업로드된 파일: {uploaded_filename}, 표준 파일: {os.path.basename(STANDARD_AUDIO_PATH)}, DTW 정규화 거리: {normalized_distance:.2f}"
         )
     except Exception as e:
         if "ffmpeg" in str(e).lower() or "codec" in str(e).lower():
@@ -100,7 +113,7 @@ async def generate_waveform(file: UploadFile = File(...)):
         librosa.display.waveshow(y, sr=sr, alpha=0.8, ax=ax)
         
         # 파일명은 직접 받은 파일에서 가져옴
-        uploaded_filename = file.filename
+        uploaded_filename = file.filename 
         ax.set(title='Waveform of ' + uploaded_filename)
         
         ax.set(xlabel='Time (s)', ylabel='Amplitude')
