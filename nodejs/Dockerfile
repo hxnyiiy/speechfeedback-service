@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # 5. Express 서버가 사용할 포트 노출
-EXPOSE 8888
+EXPOSE 8000
 
 # 6. 컨테이너 시작 시 실행될 명령어
 CMD ["npm", "start"]

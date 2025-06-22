@@ -12,7 +12,7 @@ app.use(cors()); // CORS 미들웨어 적용
 app.use(express.json()); // JSON 요청 바디 파싱
 app.use(express.urlencoded({ extended: true })); // URL-encoded 요청 바디 파싱
 
-const port = 8888; // Node.js 서버 포트
+const port = 8000; // Node.js 서버 포트
 // FastAPI 기본 URL (EC2 인스턴스의 퍼블릭 IP와 포트를 사용)
 const fastapiUrl = 'http://13.250.114.125:3000'; 
 

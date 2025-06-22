@@ -23,7 +23,7 @@ services:
     container_name: audio-analysis-node
     ports:
       # 호스트의 8888번 포트와 컨테이너의 8888번 포트를 연결
-      - "8888:8888"
+      - "8000:8000"
     depends_on:
       - python-backend # python-backend 서비스가 먼저 시작되도록 보장
     environment:
