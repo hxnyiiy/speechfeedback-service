@@ -8,12 +8,11 @@ on:
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
-
-APP_DOCKER_IMAGE_NAME: hxnyiiy01/speechfeedback-service 
-AWS_REGION: ap-southeast-2
-EC2_HOST: ${{ secrets.HOST }}
-EC2_USERNAME: ${{ secrets.USERNAME }}
-EC2_KEY: ${{ secrets.KEY }}
+  APP_DOCKER_IMAGE_NAME: hxnyiiy01/speechfeedback-service 
+  AWS_REGION: ap-southeast-2
+  EC2_HOST: ${{ secrets.HOST }}
+  EC2_USERNAME: ${{ secrets.USERNAME }}
+  EC2_KEY: ${{ secrets.KEY }}
 
 jobs:
   build-and-deploy:
