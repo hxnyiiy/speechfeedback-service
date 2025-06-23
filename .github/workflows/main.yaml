@@ -46,7 +46,7 @@ jobs:
           key: ${{ env.EC2_KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            echo "--- Pulling Latest App Image ---"
+            echo "--- Pulling the Latest App Image ---"
             docker pull ${{ env.APP_DOCKER_IMAGE_NAME }}:latest
             echo "--- Stopping and Removing Old App Container ---"
             docker stop speechfeedback-service || true
