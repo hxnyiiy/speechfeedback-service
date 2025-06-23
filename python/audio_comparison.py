@@ -18,7 +18,7 @@ app = FastAPI()
 # 이 경로는 Docker 컨테이너 내의 경로를 고려해야 합니다.
 # Dockerfile에서 /work/speechfeedback-service/python/mp3/ 경로로 파일을 복사했다면 이대로 유지합니다.
 # 그렇지 않다면 Dockerfile에 맞게 경로를 조정해야 합니다.
-STANDARD_AUDIO_PATH = "/work/speechfeedback-service/python/mp3/speech_ai_liam.mp3"
+STANDARD_AUDIO_PATH = "/app/python/mp3/speech_ai_liam.mp3" 
 STANDARD_N_MFCC = 13
 
 # 표준 오디오 데이터를 전역 변수로 저장
