@@ -7,8 +7,10 @@ on:
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+  DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+
   APP_DOCKER_IMAGE_NAME: hxnyiiy01/speechfeedback-service 
+  
   AWS_REGION: ap-southeast-2
   EC2_HOST: ${{ secrets.HOST }}
   EC2_USERNAME: ${{ secrets.USERNAME }}
@@ -17,6 +19,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository 
         uses: actions/checkout@v4
@@ -44,15 +47,15 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             echo "--- Pulling Latest App Image ---"
-            docker pull ${{ env.APP_DOCKER_IMAGE_NAME }}:latest # 4-3-4c. 최신 Docker 이미지 풀
+            docker pull ${{ env.APP_DOCKER_IMAGE_NAME }}:latest
             echo "--- Stopping and Removing Old App Container ---"
-            docker stop speechfeedback-service || true # 4-3-4d. 기존 컨테이너 중지 (컨테이너 이름 변경 가능)
-            docker rm speechfeedback-service || true   # 4-3-4e. 기존 컨테이너 삭제 (컨테이너 이름 변경 가능)
+            docker stop speechfeedback-service || true
+            docker rm speechfeedback-service || true
             echo "--- Running New App Container ---"
-            docker run -d --restart always --name speechfeedback-service -p 8000:8000 ${{ env.APP_DOCKER_IMAGE_NAME }}:latest # 4-3-4f. 새 컨테이너 실행 (컨테이너 이름 및 포트 매핑 변경 가능)
+            docker run -d --restart always --name speechfeedback-service -p 8000:8000 ${{ env.APP_DOCKER_IMAGE_NAME }}:latest
 
             echo "--- Cleaning up unused Docker images ---"
-            docker system prune -a -f # 4-3-4g. 사용하지 않는 Docker 리소스 정리 (옵션)
+            docker system prune -f
         
     
   
