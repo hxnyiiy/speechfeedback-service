@@ -59,6 +59,8 @@ bookmateproject/node/**/package-lock.json
 ## nestjs
 nestjs
 
+## virtual environment
 .venv
+venv_project
 
 results

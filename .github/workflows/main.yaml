@@ -1,0 +1,15 @@
+name: Deploy Node.js MVC App to EC2 
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+
+APP_DOCKER_IMAGE_NAME: hxnyiiy01/restful_app 
+
+AWS_REGION: ap-
+  

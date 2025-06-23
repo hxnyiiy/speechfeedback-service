@@ -1,37 +1,22 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
-  # FastAPI (Python) 백엔드 서비스
-  python-backend:
-    build: ./python_service   # python_service 폴더의 Dockerfile 사용
-    container_name: audio-analysis-fastapi
+  # Node.js 서비스 정의
+  nodejs_app:
+    build: ./nodejs # 'nodejs' 폴더의 Dockerfile을 참조
+    container_name: my_nodejs_service
     ports:
-      # 호스트의 3000번 포트와 컨테이너의 3000번 포트를 연결
-      # 이 포트가 Node.js에서 fastapiUrl로 사용됩니다.
-      - "3000:3000"
+      - "8000:8000" # 호스트의 8000 포트를 컨테이너의 8000 포트에 연결
     volumes:
-      # 개발 중 코드 변경 시 실시간 반영을 위해 볼륨 마운트 (선택 사항, 프로덕션에서는 제거)
-      # - ./python_service:/app/python
-      # 만약 표준 MP3 파일이 컨테이너 외부에 있고 빌드 시점에 복사되지 않았다면 아래 줄을 추가:
-      # - ./python_service/mp3:/app/python/mp3
-    restart: always # 컨테이너 종료 시 항상 재시작
+      - ./nodejs:/app # 개발 중 소스 코드 변경 사항 반영
+      - /app/node_modules # 컨테이너 내부의 node_modules는 호스트와 분리
 
-  # Express.js (Node.js) 프론트엔드/프록시 서비스
-  node-frontend:
-    build: ./node_service     # node_service 폴더의 Dockerfile 사용
-    container_name: audio-analysis-node
+  # Python (FastAPI) 서비스 정의
+  python_app:
+    build: ./python # 'python' 폴더의 Dockerfile을 참조
+    container_name: my_fastapi_service
+    # Node.js와 포트 충돌 방지를 위해 호스트 포트를 다르게 설정 (예: 8001)
     ports:
-      # 호스트의 8888번 포트와 컨테이너의 8888번 포트를 연결
-      - "8000:8000"
-    depends_on:
-      - python-backend # python-backend 서비스가 먼저 시작되도록 보장
-    environment:
-      # Node.js 서비스가 FastAPI 서비스에 접근할 때 사용할 주소
-      # Docker Compose 네트워크 내에서는 서비스 이름으로 접근 가능합니다.
-      # 이 값은 node_server.js 파일 내부의 fastapiUrl 변수에 맞춰야 합니다.
-      FASTAPI_URL: http://python-backend:3000 # Docker Compose 네트워크 이름과 FastAPI 컨테이너 포트
+      - "8001:3000" # 호스트의 8001 포트를 컨테이너의 3000 포트에 연결 (FastAPI EXPOSE 3000에 맞춤)
     volumes:
-      # 개발 중 코드 변경 시 실시간 반영을 위해 볼륨 마운트 (선택 사항, 프로덕션에서는 제거)
-      # - ./node_service:/app
-    restart: always # 컨테이너 종료 시 항상 재시작
+      - ./python:/app # 개발 중 소스 코드 변경 사항 반영
