@@ -76,20 +76,20 @@ jobs:
             cd /home/${{ env.EC2_USERNAME }}/ # scp target 경로와 일치해야 함
 
             # EC2에 Docker Compose 설치 확인 및 설치 (필요시)
-            if ! command -v docker-compose &> /dev/null
+            if ! command -v docker compose &> /dev/null
             then
                 echo "Docker Compose not found, installing..."
-                sudo apt-get update && sudo apt-get install -y docker-compose # Ubuntu 기준 (다른 OS면 변경)
+                sudo apt-get update && sudo apt-get install -y docker-compose-plugin
             fi
 
             # 기존 서비스 중지 및 삭제
-            docker-compose down || true
+            docker compose down || true
             
             # 최신 이미지 풀 (Docker Hub에서)
-            docker-compose pull
+            docker compose pull
             
             # 새 컨테이너 실행
-            docker-compose up -d
+            docker compose up -d
 
             echo "--- Docker containers are up and running ---"
             echo "--- Cleaning up unused Docker images and volumes ---"
