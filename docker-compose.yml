@@ -1,22 +1,27 @@
+# your-repo-root/docker-compose.yml
 version: '3.8'
-
 services:
-  # Node.js 서비스 정의
-  nodejs_app:
-    build: ./nodejs # 'nodejs' 폴더의 Dockerfile을 참조
-    container_name: my_nodejs_service
+  # Node.js 애플리케이션 서비스
+  nodejs_frontend:
+    build:
+      context: ./nodejs # Node.js Dockerfile이 있는 경로
+      dockerfile: Dockerfile # ./nodejs/Dockerfile 이므로 Dockerfile만 명시
+    image: hxnyiiy01/speechfeedback-nodejs:latest # Node.js 앱의 Docker 이미지 이름 (다른 이름으로 변경)
+    container_name: speechfeedback-nodejs-container
     ports:
-      - "8000:8000" # 호스트의 8000 포트를 컨테이너의 8000 포트에 연결
-    volumes:
-      - ./nodejs:/app # 개발 중 소스 코드 변경 사항 반영
-      - /app/node_modules # 컨테이너 내부의 node_modules는 호스트와 분리
+      - "8000:8000" # 호스트의 8000번 포트를 컨테이너의 8000번 포트로 매핑
+    restart: always
 
-  # Python (FastAPI) 서비스 정의
-  python_app:
-    build: ./python # 'python' 폴더의 Dockerfile을 참조
-    container_name: my_fastapi_service
-    # Node.js와 포트 충돌 방지를 위해 호스트 포트를 다르게 설정 (예: 8001)
+  # FastAPI 애플리케이션 서비스
+  fastapi_backend:
+    build:
+      context: ./python # FastAPI Dockerfile이 있는 경로
+      dockerfile: Dockerfile # ./python/Dockerfile 이므로 Dockerfile만 명시
+    image: hxnyiiy01/speechfeedback-fastapi:latest # FastAPI 앱의 Docker 이미지 이름 (새로 생성)
+    container_name: speechfeedback-fastapi-container
     ports:
-      - "8001:3000" # 호스트의 8001 포트를 컨테이너의 3000 포트에 연결 (FastAPI EXPOSE 3000에 맞춤)
-    volumes:
-      - ./python:/app # 개발 중 소스 코드 변경 사항 반영
+      - "3000:3000" # 호스트의 3000번 포트를 컨테이너의 3000번 포트로 매핑 (FastAPI Dockerfile에 EXPOSE 3000)
+    restart: always
+    # Node.js 앱이 FastAPI 앱과 통신해야 한다면, FastAPI 컨테이너의 내부 주소를 환경변수로 Node.js 앱에 전달
+    # environment:
+    #   FASTAPI_URL: http://fastapi_backend:3000 # Docker Compose 네트워크 내에서 서비스 이름(fastapi_backend)으로 통신
