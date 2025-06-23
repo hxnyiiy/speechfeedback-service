@@ -54,7 +54,7 @@ jobs:
             echo "--- Running New App Container ---"
             docker run -d --restart always --name speechfeedback-service -p 8000:8000 ${{ env.APP_DOCKER_IMAGE_NAME }}:latest
 
-            echo "--- Cleaning up unused Docker images ---"
+            echo "---- Cleaning up unused Docker images ---"
             docker system prune -f
         
     
