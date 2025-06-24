@@ -5,19 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>오디오 유사도 분석</title>
     <style>
+        /* Basic styling for body and container */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
         .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
         h1 { color: #333; text-align: center; margin-bottom: 30px;}
+
+        /* Input and button styling */
         input#audioFileInput { border: 1px solid #ddd; padding: 10px; border-radius: 4px; width: calc(100% - 22px); margin-bottom: 20px; }
         button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; margin-bottom: 10px; }
         button:hover { background-color: #0056b3; }
+
+        /* Result and loading styling */
         #result { margin-top: 30px; padding: 15px; border: 1px solid #eee; border-radius: 4px; background-color: #e9e9e9; }
         #result p { margin: 5px 0; }
         .loading { text-align: center; margin-top: 20px; font-style: italic; color: #555; }
+
+        /* Waveform container styling */
         #waveform-container { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
         #waveform-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
 
-        /* 표준 파형 컨테이너 스타일 */
+        /* Standard waveform container styling */
         #standard-waveform-container {
             margin-top: 20px;
             padding: 10px;
@@ -32,14 +39,14 @@
             display: block;
             margin: 0 auto;
         }
-        
-        /* 새로 추가된 겹쳐진 파형 컨테이너 스타일 */
+
+        /* Overlapped waveform container styling */
         #overlapped-waveform-container {
             margin-top: 20px;
             padding: 10px;
-            border: 1px solid #007bff; /* 다른 색상으로 강조 */
+            border: 1px solid #007bff; /* Highlight with a different color */
             border-radius: 8px;
-            background-color: #e6f3ff; /* 연한 파랑 배경 */
+            background-color: #e6f3ff; /* Light blue background */
             text-align: center;
         }
         #overlapped-waveform-image {
@@ -55,10 +62,11 @@
         <h1>오디오 유사도 분석 (AI 파일과 비교)</h1>
         <p>비교할 오디오 파일을 업로드해주세요. 업로드된 파일은 미리 지정된 AI 음성 파일과 비교됩니다.</p>
         <input type="file" id="audioFileInput" accept="audio/*">
-        
-        <button onclick="generateWaveform()">업로드된 파일 파형 보기</button> 
-        <button onclick="generateOverlappedWaveform()">겹쳐진 파형 보기</button> 
-        <button onclick="uploadAndAnalyze()">유사도 분석 시작</button> <div id="loading" class="loading" style="display:none;">
+
+        <button onclick="generateWaveform()">업로드된 파일 파형 보기</button>
+        <button onclick="generateOverlappedWaveform()">겹쳐진 파형 보기</button>
+        <button onclick="uploadAndAnalyze()">유사도 분석 시작</button>
+        <div id="loading" class="loading" style="display:none;">
             분석 중입니다... 잠시만 기다려주세요.
         </div>
 
@@ -79,75 +87,82 @@
             <h2>겹쳐진 오디오 파형</h2>
             <img id="overlapped-waveform-image" src="" alt="겹쳐진 오디오 파형">
         </div>
-        
+
         <div id="result" style="display:none;">
             <h2>🎤 발표 피드백 결과</h2>
             <p id="similarityScore" style="font-size: 22px; font-weight: bold;">유사도 점수: -</p>
             <p id="feedbackMessage" style="font-size: 18px; color: #007bff;">메시지: -</p>
             <p id="detail" style="color: #555;">상세 분석: -</p>
-        </div>        
+        </div>
     </div>
 
     <script>
-        // 이 함수는 이제 generateWaveform 내부에서만 호출되거나, 필요에 따라 직접 호출될 수 있습니다.
+        /**
+         * Loads and displays the standard audio waveform image from the server.
+         * @returns {Promise<boolean>} True if the waveform was loaded successfully, false otherwise.
+         */
         async function loadStandardWaveform() {
             const standardWaveformContainer = document.getElementById('standard-waveform-container');
             const standardWaveformImage = document.getElementById('standard-waveform-image');
             const standardWaveformLoading = document.getElementById('standard-waveform-loading');
 
-            // 표준 파형 로딩 시작
+            // Show loading indicator and hide container initially
             standardWaveformLoading.style.display = 'block';
-            standardWaveformContainer.style.display = 'none'; // 로드 전 잠시 숨김
-            standardWaveformImage.src = ''; // 이미지 초기화
+            standardWaveformContainer.style.display = 'none';
+            standardWaveformImage.src = ''; // Clear previous image
 
             try {
                 const response = await fetch('/get_standard_waveform');
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error('표준 파형 로딩 실패:', errorData.detail || errorData.error || response.statusText);
-                    alert('표준 파형을 불러오는 데 실패했습니다.');
-                    return false; // 실패 시 false 반환
+                    console.error('Failed to load standard waveform:', errorData.detail || errorData.error || response.statusText);
+                    displayCustomMessage('오류', '표준 파형을 불러오는 데 실패했습니다.', 'danger');
+                    return false;
                 }
                 const blob = await response.blob();
                 const imageUrl = URL.createObjectURL(blob);
                 standardWaveformImage.src = imageUrl;
-                
-                // 이미지 로드 완료를 기다린 후 로딩 숨김
+
+                // Wait for the image to load before hiding the loading indicator
                 await new Promise(resolve => { standardWaveformImage.onload = resolve; });
-                
+
                 standardWaveformLoading.style.display = 'none';
-                standardWaveformContainer.style.display = 'block'; // 성공 시 컨테이너 표시
-                return true; // 성공 시 true 반환
+                standardWaveformContainer.style.display = 'block'; // Show container on success
+                return true;
 
             } catch (error) {
-                console.error('표준 파형 로딩 중 오류:', error);
-                alert(`표준 파형을 불러오는 데 실패했습니다: ${error.message}`);
+                console.error('Error loading standard waveform:', error);
+                displayCustomMessage('오류', `표준 파형을 불러오는 데 실패했습니다: ${error.message}`, 'danger');
                 standardWaveformContainer.style.display = 'none';
                 standardWaveformLoading.style.display = 'none';
-                return false; // 실패 시 false 반환
+                return false;
             }
         }
 
+        /**
+         * Uploads the selected audio file to the server for similarity analysis
+         * and displays the feedback based on the similarity score.
+         */
         async function uploadAndAnalyze() {
             const audioFileInput = document.getElementById('audioFileInput');
             const resultDiv = document.getElementById('result');
             const loadingDiv = document.getElementById('loading');
             const similarityScoreElem = document.getElementById('similarityScore');
-            const messageElem = document.getElementById('message');
+            const feedbackMessageElem = document.getElementById('feedbackMessage');
             const detailElem = document.getElementById('detail');
 
             const file = audioFileInput.files?.[0];
             if (!file) {
-                alert('오디오 파일을 선택해주세요.');
+                displayCustomMessage('알림', '오디오 파일을 선택해주세요.', 'info');
                 return;
             }
 
+            // Show loading indicator and hide previous results/waveforms
             loadingDiv.style.display = 'block';
             resultDiv.style.display = 'none';
-            // 유사도 분석 시에는 파형 컨테이너들을 모두 숨깁니다.
             document.getElementById('waveform-container').style.display = 'none';
-            document.getElementById('standard-waveform-container').style.display = 'none'; 
-            document.getElementById('overlapped-waveform-container').style.display = 'none'; // 겹쳐진 파형 컨테이너도 숨김
+            document.getElementById('standard-waveform-container').style.display = 'none';
+            document.getElementById('overlapped-waveform-container').style.display = 'none';
 
             const formData = new FormData();
             formData.append('audioFile', file);
@@ -164,45 +179,72 @@
                 }
 
                 const data = await response.json();
+                const similarityScore = data.similarity_score;
 
-                similarityScoreElem.textContent = `유사도 점수: ${data.similarity_score.toFixed(4)}`;
-                messageElem.textContent = `메시지: ${data.message}`;
-                detailElem.textContent = `상세: ${data.detail || '-'}`;
+                similarityScoreElem.textContent = `유사도 점수: ${similarityScore.toFixed(4)}`;
+
+                // Set feedback message based on similarity score
+                let message = '';
+                let detail = '';
+                if (similarityScore >= 0.9) {
+                    message = '✨ 발음이 완벽해요! AI 음성 원본과 거의 동일합니다.';
+                    detail = '매우 안정적이고 정확한 발음을 구사하고 있습니다. 훌륭합니다!';
+                } else if (similarityScore >= 0.8) {
+                    message = '👍 아주 잘하셨어요! 발음이 훌륭하고 자연스럽습니다.';
+                    detail = '대부분의 음절이 AI 음성 원본과 잘 일치하며, 억양과 강세도 좋습니다.';
+                } else if (similarityScore >= 0.7) {
+                    message = '😄 괜찮아요! 발음이 대체로 명확하지만, 몇 군데 개선할 부분이 있습니다.';
+                    detail = '일부 단어나 구절에서 미세한 차이가 발견됩니다. 해당 부분을 집중적으로 연습하면 더 좋아질 거예요.';
+                } else if (similarityScore >= 0.6) {
+                    message = '🙂 노력해봅시다! 발음 정확도를 좀 더 높일 필요가 있어요.';
+                    detail = '전반적으로 이해는 가능하나, 몇몇 발음이 명확하지 않습니다. 원본 음성을 반복해서 들어보세요.';
+                } else {
+                    message = '😅 다시 한번 시도해볼까요? 발음 연습이 더 필요합니다.';
+                    detail = 'AI 음성 원본과의 차이가 크게 나타납니다. 각 단어의 정확한 발음에 집중하여 연습하는 것이 좋습니다.';
+                }
+
+                feedbackMessageElem.textContent = `메시지: ${message}`;
+                detailElem.textContent = `상세 분석: ${detail}`;
 
                 resultDiv.style.display = 'block';
 
             } catch (error) {
                 console.error('Error:', error);
-                alert(`분석 중 오류가 발생했습니다: ${error.message}`);
+                displayCustomMessage('오류', `분석 중 오류가 발생했습니다: ${error.message}`, 'danger');
                 resultDiv.style.display = 'none';
             } finally {
                 loadingDiv.style.display = 'none';
             }
         }
 
+        /**
+         * Generates and displays the waveform for the uploaded audio file.
+         * Also loads the standard waveform for comparison.
+         */
         async function generateWaveform() {
             const audioFileInput = document.getElementById('audioFileInput');
             const waveformContainer = document.getElementById('waveform-container');
             const waveformImage = document.getElementById('waveform-image');
             const loadingDiv = document.getElementById('loading');
             document.getElementById('result').style.display = 'none';
-            document.getElementById('overlapped-waveform-container').style.display = 'none'; // 겹쳐진 파형 숨김
+            document.getElementById('overlapped-waveform-container').style.display = 'none';
 
             const file = audioFileInput.files?.[0];
             if (!file) {
-                alert('오디오 파일을 선택해주세요.');
+                displayCustomMessage('알림', '오디오 파일을 선택해주세요.', 'info');
                 return;
             }
 
+            // Show loading and hide waveform container initially
             loadingDiv.style.display = 'block';
             waveformContainer.style.display = 'none';
             waveformImage.src = '';
-            
-            // 표준 파형도 함께 보여주려면 여기서 로드합니다.
+
+            // Load standard waveform first
             const standardWaveformLoaded = await loadStandardWaveform();
             if (!standardWaveformLoaded) {
                 loadingDiv.style.display = 'none';
-                return; // 표준 파형 로드 실패 시 중단
+                return; // Stop if standard waveform failed to load
             }
 
             const formData = new FormData();
@@ -222,45 +264,48 @@
                 const blob = await response.blob();
                 const imageUrl = URL.createObjectURL(blob);
                 waveformImage.src = imageUrl;
-                waveformContainer.style.display = 'block'; // 업로드된 파형 표시
+                waveformContainer.style.display = 'block'; // Show uploaded waveform
 
             } catch (error) {
                 console.error('Error generating waveform:', error);
-                alert(`파형을 불러오는 데 실패했습니다: ${error.message}`);
+                displayCustomMessage('오류', `파형을 불러오는 데 실패했습니다: ${error.message}`, 'danger');
                 waveformContainer.style.display = 'none';
             } finally {
                 loadingDiv.style.display = 'none';
             }
         }
 
-        // --- 새로 추가된 함수: 겹쳐진 파형 보기 ---
+        /**
+         * Generates and displays an overlapped waveform image
+         * showing the uploaded audio and the standard audio combined.
+         */
         async function generateOverlappedWaveform() {
             const audioFileInput = document.getElementById('audioFileInput');
             const overlappedWaveformContainer = document.getElementById('overlapped-waveform-container');
             const overlappedWaveformImage = document.getElementById('overlapped-waveform-image');
             const loadingDiv = document.getElementById('loading');
-            
-            // 다른 결과 및 파형 컨테이너 숨기기
+
+            // Hide other result and waveform containers
             document.getElementById('result').style.display = 'none';
             document.getElementById('waveform-container').style.display = 'none';
             document.getElementById('standard-waveform-container').style.display = 'none';
 
             const file = audioFileInput.files?.[0];
             if (!file) {
-                alert('오디오 파일을 선택해주세요.');
+                displayCustomMessage('알림', '오디오 파일을 선택해주세요.', 'info');
                 return;
             }
 
+            // Show loading and hide overlapped waveform container initially
             loadingDiv.style.display = 'block';
             overlappedWaveformContainer.style.display = 'none';
             overlappedWaveformImage.src = '';
 
             const formData = new FormData();
-            formData.append('audioFile', file); // Node.js 엔드포인트는 'audioFile'로 받습니다.
-            // Node.js는 이를 다시 'uploaded_audio_file'로 FastAPI에 전달합니다.
+            formData.append('audioFile', file); // Node.js endpoint receives 'audioFile'
 
             try {
-                const response = await fetch('/get_overlapped_waveform', { // Node.js의 새로운 엔드포인트 호출
+                const response = await fetch('/get_overlapped_waveform', { // Call Node.js new endpoint
                     method: 'POST',
                     body: formData,
                 });
@@ -273,19 +318,108 @@
                 const blob = await response.blob();
                 const imageUrl = URL.createObjectURL(blob);
                 overlappedWaveformImage.src = imageUrl;
-                overlappedWaveformContainer.style.display = 'block'; // 겹쳐진 파형 컨테이너 표시
+                overlappedWaveformContainer.style.display = 'block'; // Show overlapped waveform container
 
             } catch (error) {
                 console.error('Error generating overlapped waveform:', error);
-                alert(`겹쳐진 파형을 불러오는 데 실패했습니다: ${error.message}`);
+                displayCustomMessage('오류', `겹쳐진 파형을 불러오는 데 실패했습니다: ${error.message}`, 'danger');
                 overlappedWaveformContainer.style.display = 'none';
             } finally {
                 loadingDiv.style.display = 'none';
             }
         }
 
-        // 페이지 로드 시 표준 파형을 바로 불러오지 않고, 버튼 클릭 시점에 필요에 따라 로드하도록 변경
-        // window.onload = loadStandardWaveform; // 이 줄은 제거되었습니다.
+        /**
+         * Displays a custom message box instead of the browser's native alert.
+         * @param {string} title - The title of the message box.
+         * @param {string} message - The main content message.
+         * @param {string} type - The type of message ('info', 'success', 'danger') to influence styling.
+         */
+        function displayCustomMessage(title, message, type = 'info') {
+            let messageBox = document.getElementById('customMessageBox');
+            if (!messageBox) {
+                // Create message box element if it doesn't exist
+                messageBox = document.createElement('div');
+                messageBox.id = 'customMessageBox';
+                messageBox.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    max-width: 400px;
+                    text-align: center;
+                    display: none; /* Hidden by default */
+                    flex-direction: column;
+                    gap: 15px;
+                `;
+                document.body.appendChild(messageBox);
+
+                // Add title element
+                const messageTitle = document.createElement('h3');
+                messageTitle.id = 'customMessageTitle';
+                messageBox.appendChild(messageTitle);
+
+                // Add content element
+                const messageContent = document.createElement('p');
+                messageContent.id = 'customMessageContent';
+                messageBox.appendChild(messageContent);
+
+                // Add close button
+                const closeButton = document.createElement('button');
+                closeButton.textContent = '확인';
+                closeButton.onclick = () => messageBox.style.display = 'none'; // Hide on click
+                closeButton.style.cssText = `
+                    background-color: #007bff;
+                    color: white;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 10px;
+                `;
+                messageBox.appendChild(closeButton);
+            }
+
+            // Set content and style based on parameters
+            const titleElem = document.getElementById('customMessageTitle');
+            const contentElem = document.getElementById('customMessageContent');
+            titleElem.textContent = title;
+            contentElem.textContent = message;
+
+            let borderColor, backgroundColor;
+            switch (type) {
+                case 'info':
+                    borderColor = '#007bff';
+                    backgroundColor = '#e6f3ff';
+                    break;
+                case 'success':
+                    borderColor = '#28a745';
+                    backgroundColor = '#e6ffe6';
+                    break;
+                case 'danger':
+                    borderColor = '#dc3545';
+                    backgroundColor = '#ffe6e6';
+                    break;
+                default:
+                    borderColor = '#007bff';
+                    backgroundColor = '#e6f3ff';
+            }
+            messageBox.style.borderColor = borderColor;
+            messageBox.style.backgroundColor = backgroundColor;
+            messageBox.style.border = `1px solid ${borderColor}`;
+
+            messageBox.style.display = 'flex'; // Show the message box
+        }
+
+        // The line to load standard waveform on window load has been removed,
+        // as it's now triggered by button clicks (e.g., generateWaveform).
+        // window.onload = loadStandardWaveform;
     </script>
 </body>
 </html>
