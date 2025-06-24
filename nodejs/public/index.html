@@ -97,6 +97,10 @@
     </div>
 
     <script>
+        // Global variables to cache the overlapped waveform image and the file that generated it
+        let cachedOverlappedImageUrl = null;
+        let lastOverlappedFile = null;
+
         /**
          * Loads and displays the standard audio waveform image from the server.
          * @returns {Promise<boolean>} True if the waveform was loaded successfully, false otherwise.
@@ -162,7 +166,12 @@
             resultDiv.style.display = 'none';
             document.getElementById('waveform-container').style.display = 'none';
             document.getElementById('standard-waveform-container').style.display = 'none';
-            document.getElementById('overlapped-waveform-container').style.display = 'none';
+            // Do NOT hide overlapped-waveform-container here, as generateOverlappedWaveform() will display it.
+
+            // Call generateOverlappedWaveform to show the overlapped waveform
+            // This will handle showing its own loading state and displaying the image (from cache or new fetch).
+            await generateOverlappedWaveform();
+
 
             const formData = new FormData();
             formData.append('audioFile', file);
@@ -213,6 +222,7 @@
                 displayCustomMessage('오류', `분석 중 오류가 발생했습니다: ${error.message}`, 'danger');
                 resultDiv.style.display = 'none';
             } finally {
+                // Ensure loading indicator is hidden after all operations
                 loadingDiv.style.display = 'none';
             }
         }
@@ -227,7 +237,7 @@
             const waveformImage = document.getElementById('waveform-image');
             const loadingDiv = document.getElementById('loading');
             document.getElementById('result').style.display = 'none';
-            document.getElementById('overlapped-waveform-container').style.display = 'none';
+            document.getElementById('overlapped-waveform-container').style.display = 'none'; // Ensure overlapped is hidden
 
             const file = audioFileInput.files?.[0];
             if (!file) {
@@ -278,6 +288,7 @@
         /**
          * Generates and displays an overlapped waveform image
          * showing the uploaded audio and the standard audio combined.
+         * This function now caches the image to avoid re-fetching for the same file.
          */
         async function generateOverlappedWaveform() {
             const audioFileInput = document.getElementById('audioFileInput');
@@ -296,7 +307,20 @@
                 return;
             }
 
-            // Show loading and hide overlapped waveform container initially
+            // Check if the current file is the same as the last one that generated an overlapped waveform
+            // and if there's a cached image URL for it.
+            // Using file.name and file.size for a simple check, more robust comparison might involve file hash.
+            if (cachedOverlappedImageUrl && lastOverlappedFile &&
+                lastOverlappedFile.name === file.name &&
+                lastOverlappedFile.size === file.size) {
+                overlappedWaveformImage.src = cachedOverlappedImageUrl;
+                overlappedWaveformContainer.style.display = 'block';
+                loadingDiv.style.display = 'none'; // Ensure loading is hidden if cached
+                console.log('캐시된 겹쳐진 파형 이미지를 사용합니다.');
+                return; // Exit early as image is already displayed
+            }
+
+            // If not cached or file changed, proceed with fetching
             loadingDiv.style.display = 'block';
             overlappedWaveformContainer.style.display = 'none';
             overlappedWaveformImage.src = '';
@@ -320,10 +344,18 @@
                 overlappedWaveformImage.src = imageUrl;
                 overlappedWaveformContainer.style.display = 'block'; // Show overlapped waveform container
 
+                // Cache the new image URL and the file object for future use
+                cachedOverlappedImageUrl = imageUrl;
+                lastOverlappedFile = file;
+                console.log('새로운 겹쳐진 파형 이미지를 가져와 캐시했습니다.');
+
             } catch (error) {
                 console.error('Error generating overlapped waveform:', error);
                 displayCustomMessage('오류', `겹쳐진 파형을 불러오는 데 실패했습니다: ${error.message}`, 'danger');
                 overlappedWaveformContainer.style.display = 'none';
+                // Clear cache on error to ensure a fresh fetch next time
+                cachedOverlappedImageUrl = null;
+                lastOverlappedFile = null;
             } finally {
                 loadingDiv.style.display = 'none';
             }
