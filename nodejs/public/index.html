@@ -57,7 +57,7 @@
         }
 
         /* Container for the main content */
-        .container {
+        .container_ {
             background-color: #ffffff;
             padding: 40px;
             border-radius: 12px;
@@ -70,7 +70,7 @@
 
         /* Responsive adjustment for wider screens */
         @media (min-width: 1200px) {
-            .container {
+            .container_ {
                 width: 80%; /* Further widen for large screens */
             }
         }
@@ -82,7 +82,7 @@
             font-size: 32px; /* Larger font size for main title */
             font-weight: 700; /* Bolder */
         }
-        .container > p { /* Styling for the introductory paragraph */
+        .container_ > p { /* Styling for the introductory paragraph */
             text-align: center;
             color: #555;
             font-size: 16px;
@@ -246,7 +246,7 @@
           </ul>
         </div>
       </nav>
-<div class="container">
+<div class="container_">
     <h1>AI와의 발표 유사도 분석</h1>
     <p>비교할 오디오 파일을 업로드해주세요. 업로드된 파일은 표준 AI 음성 파일과 비교됩니다.</p>
     <input type="file" id="audioFileInput" accept="audio/*">
