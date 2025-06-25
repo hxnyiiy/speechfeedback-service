@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* Global font and basic reset */
         body {
@@ -17,7 +18,7 @@
             color: #333;
         }
 
-        /* Navigation Bar Styling - Adapted from the first HTML's navbar, using Bootstrap classes */
+        /* Navigation Bar Styling - Adapted to match image_f687f1.png */
         .navbar {
             background-color: #ffffff;
             border-bottom: 1px solid #e0e0e0; /* Subtle border */
@@ -26,6 +27,7 @@
             z-index: 1000;
         }
 
+        /* Note: For .navbar-brand and .nav-link styles, ensure your custom CSS is defined AFTER Bootstrap's or use !important if needed to override. */
         .navbar-brand {
             font-family: 'Orbitron', sans-serif; /* Using font from the first HTML */
             font-size: 1.8rem; /* Adjusted for consistency */
@@ -34,7 +36,7 @@
         }
 
         .navbar-brand .text-primary {
-            color: #6c63ff !important; /* Specific primary color from the first HTML */
+            color: #007bff !important; /* Specific blue color from the image */
         }
 
         .navbar-nav .nav-link {
@@ -43,28 +45,35 @@
             padding: 5px 0;
             position: relative;
             transition: color 0.2s ease;
-            margin-left: 15px; /* Spacing between links */
+            /* margin-left: 15px; */ /* Bootstrap's gap-3 on ul handles spacing now */
         }
 
         .navbar-nav .nav-link:hover {
-            color: #6c63ff; /* Hover color from the first HTML's primary */
+            color: #007bff; /* Hover color matches the blue in the brand */
         }
 
         .navbar-nav .nav-link.active {
-            color: #6c63ff !important; /* Active link color */
+            color: #007bff !important; /* Active link color matches the blue in the brand */
             font-weight: 700;
         }
 
         /* Container for the main content */
         .container {
-            background-color: #ffffff; /* White background for the main card */
-            padding: 40px; /* Increased padding */
-            border-radius: 12px; /* More rounded corners */
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); /* Softer, more prominent shadow */
-            max-width: 800px;
-            margin: 0px auto; /* More margin from top/bottom */
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 90%; /* 화면 너비의 90%를 사용하도록 설정합니다. */
+            margin: 50px auto;
             box-sizing: border-box;
-            border: 1px solid #e0e0e0; /* Subtle border for the container */
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Responsive adjustment for wider screens */
+        @media (min-width: 1200px) {
+            .container {
+                width: 80%; /* Further widen for large screens */
+            }
         }
 
         h1 {
@@ -90,29 +99,43 @@
             margin-bottom: 25px; /* More space below input */
             box-sizing: border-box;
         }
-        button {
-            background-color: #007bff; /* Vibrant blue */
+
+        /* --- Button Styling (Updated) --- */
+        .button-group {
+            display: flex; /* Arrange buttons in a row */
+            justify-content: center; /* Center the buttons */
+            gap: 10px; /* Space between buttons */
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            margin-bottom: 12px; /* Space below the button group */
+        }
+
+        .action-button {
+            background-color: #6c63ff; /* Primary color from your original design */
             color: white;
-            padding: 14px 20px; /* Larger padding for buttons */
+            padding: 10px 20px; /* Smaller padding for a more compact look */
             border: none;
-            border-radius: 8px; /* Consistent rounded corners */
+            border-radius: 25px; /* Pill shape for a cuter look */
             cursor: pointer;
-            font-size: 17px; /* Slightly larger font */
-            font-weight: 600; /* Bolder text */
-            width: 100%;
-            margin-bottom: 12px; /* Space between buttons */
+            font-size: 1rem; /* Slightly smaller font size */
+            font-weight: 600;
             transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2); /* Subtle blue shadow */
+            box-shadow: 0 2px 8px rgba(108, 99, 255, 0.2); /* Shadow with primary color */
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            max-width: 220px; /* Max width to keep them from getting too wide */
         }
-        button:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px); /* More noticeable lift */
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); /* Enhanced shadow on hover */
+
+        .action-button:hover {
+            background-color: #4a42e6; /* Darker primary on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
         }
-        button:active {
+
+        .action-button:active {
             transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(108, 99, 255, 0.2);
         }
+        /* --- End Button Styling --- */
+
 
         /* Result and loading styling */
         #result {
@@ -216,13 +239,20 @@
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light py-3">
-    <div class="container">
+    <div class="container-fluid">
         <a class="navbar-brand fw-bold fs-3" href="#">Speechy<span class="text-primary">AI</span></a>
-        <ul class="navbar-nav ms-auto align-items-center gap-3">
-            <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="aifeedback.html">AIFeedback</a></li>
-            <li class="nav-item"><a class="nav-link" href="http://13.250.114.125:8000/">AI유사도 분석</a></li>
-        </ul>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center gap-3">
+                <li class="nav-item"><a class="nav-link active" href="https://alb.seoyoung.store/index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://alb.seoyoung.store/aifeedback.html">AIFeedback</a></li>
+                <li class="nav-item"><a class="nav-link" href="http://13.250.114.125:8000/">AI유사도 분석</a></li>
+            </ul>
+        </div>
     </div>
 </nav>
 
@@ -231,9 +261,11 @@
     <p>비교할 오디오 파일을 업로드해주세요. 업로드된 파일은 표준 AI 음성 파일과 비교됩니다.</p>
     <input type="file" id="audioFileInput" accept="audio/*">
 
-    <button onclick="generateWaveform()">업로드된 파일 파형 보기</button>
-    <button onclick="generateOverlappedWaveform()">겹쳐진 파형 보기</button>
-    <button onclick="uploadAndAnalyze()">유사도 분석 시작</button>
+    <div class="button-group">
+        <button class="action-button" onclick="generateWaveform()">업로드된 파일 파형 보기</button>
+        <button class="action-button" onclick="generateOverlappedWaveform()">겹쳐진 파형 보기</button>
+        <button class="action-button" onclick="uploadAndAnalyze()">유사도 분석 시작</button>
+    </div>
     <div id="loading" class="loading" style="display:none;">
         분석 중입니다... 잠시만 기다려주세요.
     </div>
@@ -377,20 +409,20 @@
             let message = '';
             let detail = '';
             if (similarityScore >= 0.9) {
-                message = '✨ 발성이 완벽해요! AI 음성 원본과 거의 동일합니다.';
+                message = '✨ 발음이 완벽해요! AI 음성 원본과 거의 동일합니다.';
                 detail = '매우 안정적이고 정확한 발음을 구사하고 있습니다. 훌륭합니다!';
             } else if (similarityScore >= 0.8) {
-                message = '👍 아주 잘하셨어요! 발성이 훌륭하고 자연스럽습니다.';
+                message = '👍 아주 잘하셨어요! 발음이 훌륭하고 자연스럽습니다.';
                 detail = '대부분의 음절이 AI 음성 원본과 잘 일치하며, 억양과 강세도 좋습니다.';
             } else if (similarityScore >= 0.7) {
-                message = '😄 괜찮아요! 대체로 명확하지만, 몇 군데 개선할 부분이 있습니다.';
+                message = '😄 괜찮아요! 발음이 대체로 명확하지만, 몇 군데 개선할 부분이 있습니다.';
                 detail = '일부 단어나 구절에서 미세한 차이가 발견됩니다. 해당 부분을 집중적으로 연습하면 더 좋아질 거예요.';
             } else if (similarityScore >= 0.6) {
                 message = '🙂 노력해봅시다! 발음 정확도를 좀 더 높일 필요가 있어요.';
                 detail = '전반적으로 이해는 가능하나, 몇몇 발음이 명확하지 않습니다. 원본 음성을 반복해서 들어보세요.';
             } else {
-                message = '😅 다시 한번 시도해볼까요? 연습이 더 필요합니다.';
-                detail = 'AI 음성 원본과의 차이가 크게 나타납니다. 각 단어의 정확한 발음 및 속도도에 집중하여 연습하는 것이 좋습니다.';
+                message = '😅 다시 한번 시도해볼까요? 발음 연습이 더 필요합니다.';
+                detail = 'AI 음성 원본과의 차이가 크게 나타납니다. 각 단어의 정확한 발음에 집중하여 연습하는 것이 좋습니다.';
             }
 
             feedbackMessageElem.textContent = `메시지: ${message}`;
